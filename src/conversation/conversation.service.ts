@@ -15,8 +15,9 @@ export class ConversationService {
             $or: [
                 { user1, user2 },
                 { user1: user2, user2: user1 },
-            ],
-        });
+            ]
+        }).populate('user1 user2', 'fullName profileImage');
+
         if (!conversation) {
             conversation = new this.conversationModel({ user1, user2, messages: [] });
             await conversation.save();
@@ -26,57 +27,31 @@ export class ConversationService {
 
     async getChatList(userId: string): Promise<any[]> {
         const conversations = await this.conversationModel.find({
-            $or: [{ user1: userId }, { user2: userId }]
+            $or: [{ user1: userId }, { user2: userId }],
+            'messages.0': { $exists: true },
         })
             .sort({ updatedAt: -1 })
-            .populate('user1', 'fullName profileImage')
-            .populate('user2', 'fullName profileImage')
+            .populate('user1 user2', 'fullName profileImage')
             .exec();
 
-        const chatList = conversations.map(conversation => {
-            const otherUser = conversation.user1?._id.toString() === userId ? conversation.user2 : conversation.user1;
-
-            if (!otherUser) {
-                console.error(`User not found for conversation: ${conversation._id}`);
-                return null;
-            }
+        return conversations.map(conversation => {
+            const otherUser = conversation.user1._id.toString() === userId
+                ? conversation.user2
+                : conversation.user1;
 
             return {
                 id: conversation._id,
                 otherUserId: otherUser._id,
                 otherUserFullName: otherUser.fullName,
                 otherUserProfileImage: otherUser.profileImage,
-                lastMessage: conversation.messages[conversation.messages.length - 1]?.message || 'No messages yet',
-                lastMessageDate: conversation.messages[conversation.messages.length - 1]?.createdAt || null,
+                lastMessage: conversation.messages.at(-1).message,
+                lastMessageDate: conversation.messages.at(-1).createdAt,
             };
-        }).filter(Boolean);
-
-        return chatList;
+        });
     }
 
-    async getConversation(user1: string, user2: string): Promise<Conversation> {
-        const conversation = await this.conversationModel
-            .findOne({
-                $or: [
-                    { user1, user2 },
-                    { user1: user2, user2: user1 },
-                ],
-            })
-            .populate('user1', 'fullName profileImage')
-            .populate('user2', 'fullName profileImage')
-            .populate('messages.sender', 'fullName profileImage')
-            .exec();
-
-        if (!conversation) {
-            return this.findOrCreateConversation(user1, user2);
-        }
-
-        return conversation;
-    }
-
-    async createMessage(createConversationDto: CreateConversationDto): Promise<Conversation> {
-        const { sender, receiver, message } = createConversationDto;
-
+    async createMessage(dto: CreateConversationDto): Promise<Conversation> {
+        const { sender, receiver, message } = dto;
         const conversation = await this.findOrCreateConversation(sender, receiver);
 
         conversation.messages.push({
@@ -87,10 +62,20 @@ export class ConversationService {
 
         await conversation.save();
 
-        return this.conversationModel
-            .findById(conversation._id)
-            .populate('user1', 'fullName profileImage')
-            .populate('user2', 'fullName profileImage')
+        return this.conversationModel.findById(conversation._id)
+            .populate('user1 user2', 'fullName profileImage')
+            .populate('messages.sender', 'fullName profileImage')
+            .exec();
+    }
+
+    async getConversation(user1: string, user2: string): Promise<Conversation> {
+        return this.conversationModel.findOne({
+            $or: [
+                { user1, user2 },
+                { user1: user2, user2: user1 },
+            ]
+        })
+            .populate('user1 user2', 'fullName profileImage')
             .populate('messages.sender', 'fullName profileImage')
             .exec();
     }

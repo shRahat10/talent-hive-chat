@@ -4,6 +4,7 @@ import { Conversation, ConversationSchema } from './conversation.schema';
 import { ConversationController } from './conversation.controller';
 import { ConversationService } from './conversation.service';
 import { User, UserSchema } from 'src/user/user.schema';
+import { ConversationGateway } from './conversation.gateway';
 
 @Module({
     imports: [
@@ -11,6 +12,6 @@ import { User, UserSchema } from 'src/user/user.schema';
         MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     ],
     controllers: [ConversationController],
-    providers: [ConversationService],
+    providers: [ConversationService, ConversationGateway],
 })
 export class ConversationModule { }

@@ -18,7 +18,17 @@ export class ConversationController {
     @Param('user1') user1: string,
     @Param('user2') user2: string,
   ) {
-    return this.conversationService.getConversation(user1, user2);
+    const conversation = await this.conversationService.getConversation(user1, user2);
+    if (!conversation) {
+      return { message: 'Conversation not found' };
+    }
+    return conversation;
+  }
+
+  @Post('get-or-create')
+  async getOrCreateConversation(@Body() body) {
+    const { userId, contactId } = body;
+    return this.conversationService.findOrCreateConversation(userId, contactId);
   }
 
   @Post()
