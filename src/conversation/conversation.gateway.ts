@@ -22,6 +22,7 @@ export class ConversationGateway implements OnGatewayConnection, OnGatewayDiscon
     async handleMessage(client: any, messageData: CreateConversationDto) {
         const updatedConversation = await this.conversationService.createMessage(messageData);
         this.server.emit('message', updatedConversation);
+
         return updatedConversation;
     }
 }
