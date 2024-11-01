@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Conversation } from './conversation.schema';
@@ -46,6 +46,7 @@ export class ConversationService {
                 otherUserProfileImage: otherUser.profileImage,
                 lastMessage: conversation.messages.at(-1).message,
                 lastMessageDate: conversation.messages.at(-1).createdAt,
+                lastMessageIsRead: conversation.messages.at(-1).isRead,
             };
         });
     }
@@ -58,6 +59,7 @@ export class ConversationService {
             sender: new Types.ObjectId(sender),
             message,
             createdAt: new Date(),
+            isRead: false,
         });
 
         await conversation.save();
@@ -78,5 +80,21 @@ export class ConversationService {
             .populate('user1 user2', 'fullName profileImage')
             .populate('messages.sender', 'fullName profileImage')
             .exec();
+    }
+
+    async markAsRead(conversationId: string): Promise<Conversation> {
+        const conversation = await this.conversationModel.findById(conversationId);
+
+        if (!conversation) {
+            throw new NotFoundException(`Conversation with id ${conversationId} not found`);
+        }
+
+        conversation.messages.forEach(message => {
+            if (!message.isRead) {
+                message.isRead = true;
+            }
+        });
+
+        return await conversation.save();
     }
 }
