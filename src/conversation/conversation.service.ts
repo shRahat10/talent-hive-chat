@@ -39,14 +39,17 @@ export class ConversationService {
                 ? conversation.user2
                 : conversation.user1;
 
+            const lastMessage = conversation.messages.at(-1);
+
             return {
                 id: conversation._id,
                 otherUserId: otherUser._id,
                 otherUserFullName: otherUser.fullName,
                 otherUserProfileImage: otherUser.profileImage,
-                lastMessage: conversation.messages.at(-1).message,
-                lastMessageDate: conversation.messages.at(-1).createdAt,
-                lastMessageIsRead: conversation.messages.at(-1).isRead,
+                lastMessage: lastMessage.message,
+                lastMessageDate: lastMessage.createdAt,
+                lastMessageIsRead: lastMessage.isRead,
+                senderId: lastMessage.sender,
             };
         });
     }
@@ -82,15 +85,20 @@ export class ConversationService {
             .exec();
     }
 
-    async markAsRead(conversationId: string): Promise<Conversation> {
-        const conversation = await this.conversationModel.findById(conversationId);
+    async markAsRead(userId: string, contactId: string, markAll: boolean): Promise<Conversation> {
+        const conversation = await this.conversationModel.findOne({
+            $or: [
+                { user1: userId, user2: contactId },
+                { user1: contactId, user2: userId },
+            ],
+        });
 
         if (!conversation) {
-            throw new NotFoundException(`Conversation with id ${conversationId} not found`);
+            throw new NotFoundException(`Conversation between users ${userId} and ${contactId} not found`);
         }
 
-        conversation.messages.forEach(message => {
-            if (!message.isRead) {
+        conversation.messages.forEach((message) => {
+            if (!message.isRead && message.sender.toString() === contactId) {
                 message.isRead = true;
             }
         });

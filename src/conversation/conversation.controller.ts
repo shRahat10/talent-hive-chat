@@ -30,16 +30,18 @@ export class ConversationController {
     return this.conversationService.createMessage(createConversationDto);
   }
 
-  @Post(':conversationId/mark-as-read')
-  async markAsRead(
-    @Param('conversationId') conversationId: string,
-  ) {
-    return this.conversationService.markAsRead(conversationId);
-  }
-
   @Post('get-or-create')
   async getOrCreateConversation(@Body() body) {
     const { userId, contactId } = body;
     return this.conversationService.findOrCreateConversation(userId, contactId);
+  }
+
+  @Post('mark-as-read')
+  async markAsRead(
+    @Body('userId') userId: string,
+    @Body('contactId') contactId: string,
+    @Body('markAll') markAll: boolean,
+  ) {
+    return this.conversationService.markAsRead(userId, contactId, markAll);
   }
 }
