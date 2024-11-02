@@ -41,6 +41,10 @@ export class ConversationService {
 
             const lastMessage = conversation.messages.at(-1);
 
+            const unreadCount = conversation.messages.filter(
+                (message) => message.sender.toString() === otherUser._id.toString() && !message.isRead
+            ).length;
+
             return {
                 id: conversation._id,
                 otherUserId: otherUser._id,
@@ -50,6 +54,7 @@ export class ConversationService {
                 lastMessageDate: lastMessage.createdAt,
                 lastMessageIsRead: lastMessage.isRead,
                 senderId: lastMessage.sender,
+                unreadCount,
             };
         });
     }
