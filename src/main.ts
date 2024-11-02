@@ -17,6 +17,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  
   // app.setGlobalPrefix(process.env.GLOBAL_PREFIX || 'v1/api');
   await app.listen(process.env.PORT || 8082);
 }
