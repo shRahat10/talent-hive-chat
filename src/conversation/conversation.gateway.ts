@@ -11,18 +11,30 @@ export class ConversationGateway implements OnGatewayConnection, OnGatewayDiscon
     constructor(private readonly conversationService: ConversationService) { }
 
     handleConnection(client: any) {
-        // console.log('Client connected:', client.id);
+        // Connection logic here
     }
 
     handleDisconnect(client: any) {
-        // console.log('Client disconnected:', client.id);
+        // Disconnection logic here
     }
 
     @SubscribeMessage('sendMessage')
     async handleMessage(client: any, messageData: CreateConversationDto) {
         const updatedConversation = await this.conversationService.createMessage(messageData);
         this.server.emit('message', updatedConversation);
-
         return updatedConversation;
+    }
+
+    @SubscribeMessage('openConversation')
+    async handleOpenConversation(client: any, { userId, contactId }) {
+        const conversation = await this.conversationService.getConversation(userId, contactId);
+        if (conversation) {
+            this.server.emit('conversationOpened', {
+                senderId: userId,
+                receiverId: contactId,
+                messages: conversation.messages,
+                conversationId: conversation._id,
+            });
+        }
     }
 }
